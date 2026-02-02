@@ -275,8 +275,17 @@ export const sellOrder = (req: QUEUE_REQUEST) => {
  * @returns The response object
  */
 export const cancelOrder = (req: QUEUE_REQUEST) => {
-  const { userId, stockSymbol } = req.body;
+  const userId = req.body.userId as string;
+  const stockSymbol = req.body.stockSymbol as string;
   const stockType = req.body.stockType as "yes" | "no";
+
+  if (!userId || !stockSymbol || !stockType) {
+    return {
+      statusCode: 400,
+      data: { error: "userId, stockSymbol, and stockType are required" },
+    };
+  }
+
   const userExists = INR_BALANCES[userId];
   const symbolExists = ORDERBOOK[stockSymbol];
 
@@ -301,7 +310,7 @@ export const cancelOrder = (req: QUEUE_REQUEST) => {
   const exitOrderbook = ORDERBOOK[stockSymbol][stockType];
   for (const [price, orderData] of exitOrderbook.entries()) {
     const userOrders = orderData.orders.filter(
-      (order) => order.userId === userId && order.type === "exit"
+      (order: { userId: string; type: string }) => order.userId === userId && order.type === "exit"
     );
 
     for (const order of userOrders) {
@@ -319,7 +328,7 @@ export const cancelOrder = (req: QUEUE_REQUEST) => {
 
     // Remove user's orders from the orders array
     orderData.orders = orderData.orders.filter(
-      (order) => !(order.userId === userId && order.type === "exit")
+      (order: { userId: string; type: string }) => !(order.userId === userId && order.type === "exit")
     );
 
     // Clean up empty price levels
@@ -334,7 +343,7 @@ export const cancelOrder = (req: QUEUE_REQUEST) => {
 
   for (const [price, orderData] of buyOrderbook.entries()) {
     const userOrders = orderData.orders.filter(
-      (order) => order.userId === userId && order.type === "buy"
+      (order: { userId: string; type: string }) => order.userId === userId && order.type === "buy"
     );
 
     for (const order of userOrders) {
@@ -353,7 +362,7 @@ export const cancelOrder = (req: QUEUE_REQUEST) => {
 
     // Remove user's orders from the orders array
     orderData.orders = orderData.orders.filter(
-      (order) => !(order.userId === userId && order.type === "buy")
+      (order: { userId: string; type: string }) => !(order.userId === userId && order.type === "buy")
     );
 
     // Clean up empty price levels

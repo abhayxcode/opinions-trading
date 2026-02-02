@@ -16,3 +16,21 @@ export let ORDERBOOK: ORDER_BOOK_TYPE = {};
 
 // In-memory users store
 export const USERS: USERS_TYPE = {};
+
+/**
+ * Reset all in-memory state - useful for testing
+ */
+export const resetAllState = () => {
+  for (const prop in ORDERBOOK) {
+    delete ORDERBOOK[prop];
+  }
+  for (const prop in INR_BALANCES) {
+    delete INR_BALANCES[prop];
+  }
+  for (const prop in STOCK_BALANCES) {
+    delete STOCK_BALANCES[prop];
+  }
+  for (const prop in USERS) {
+    delete USERS[prop];
+  }
+};
