@@ -5,11 +5,12 @@ import { pushToQueue, subscriber } from "../services/redis";
 import { QUEUE_DATA } from "../interfaces/types";
 import { generateToken } from "../utils/jwt.utils";
 import { validate } from "../middleware/validation.middleware";
+import { authRateLimiter } from "../middleware/ratelimit.middleware";
 import { registerSchema, loginSchema } from "../schemas";
 
 const router = express.Router();
 
-router.post("/register", validate(registerSchema), async (req, res) => {
+router.post("/register", authRateLimiter, validate(registerSchema), async (req, res) => {
   const payload: QUEUE_DATA = {
     _id: uuidv4(),
     endpoint: "/auth/register",
@@ -41,7 +42,7 @@ router.post("/register", validate(registerSchema), async (req, res) => {
   }
 });
 
-router.post("/login", validate(loginSchema), async (req, res) => {
+router.post("/login", authRateLimiter, validate(loginSchema), async (req, res) => {
   const payload: QUEUE_DATA = {
     _id: uuidv4(),
     endpoint: "/auth/login",
