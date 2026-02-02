@@ -19,6 +19,7 @@ const forwardRequest = async (
     _id: uuidv4(),
     endpoint,
     req: { body: req.body, params: req.params },
+    auth: req.auth,
   };
 
   try {

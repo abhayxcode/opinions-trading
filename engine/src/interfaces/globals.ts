@@ -60,3 +60,18 @@ export interface ORDER_BOOK_TYPE {
     no: Map<priceRange, ORDERDATA>;
   };
 }
+
+export interface USER_TYPE {
+  passwordHash: string;
+  role: 'admin' | 'user';
+  createdAt: number;
+}
+
+export interface USERS_TYPE {
+  [userId: string]: USER_TYPE;
+}
+
+export interface AuthContext {
+  userId: string;
+  role: 'admin' | 'user';
+}

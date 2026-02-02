@@ -1,18 +1,26 @@
 import express from "express";
 import forwardRequest from "../controllers";
+import { authenticate, requireAdmin, requireSelfOrAdmin, adminRateLimiter, generalRateLimiter } from "../middleware";
 
 const router = express.Router();
 
-router.get("/inr", async (req, res) => {
+// Get all INR balances (admin only)
+router.get("/inr", authenticate, requireAdmin, adminRateLimiter, async (req, res) => {
   await forwardRequest(req, res, "/balances/inr");
 });
-router.get("/inr/:userId", async (req, res) => {
-  await forwardRequest(req, res, "/balances/inr/:uderId");
+
+// Get INR balance by userId (self or admin)
+router.get("/inr/:userId", authenticate, requireSelfOrAdmin, generalRateLimiter, async (req, res) => {
+  await forwardRequest(req, res, "/balances/inr/:userId");
 });
-router.get("/stock", async (req, res) => {
+
+// Get all stock balances (admin only)
+router.get("/stock", authenticate, requireAdmin, adminRateLimiter, async (req, res) => {
   await forwardRequest(req, res, "/balances/stock");
 });
-router.get("/stock/:userId", async (req, res) => {
+
+// Get stock balance by userId (self or admin)
+router.get("/stock/:userId", authenticate, requireSelfOrAdmin, generalRateLimiter, async (req, res) => {
   await forwardRequest(req, res, "/balances/stock/:userId");
 });
 
