@@ -270,15 +270,15 @@ export const sellOrder = (req: QUEUE_REQUEST) => {
 };
 
 /**
- * Cancel Order
+ * Cancel Order - Cancels all pending orders for a user on a specific symbol and stockType
  * @param req - The request object
  * @returns The response object
  */
 export const cancelOrder = (req: QUEUE_REQUEST) => {
   const { userId, stockSymbol } = req.body;
   const stockType = req.body.stockType as "yes" | "no";
-  const userExists = INR_BALANCES?.userId;
-  const symbolExists = ORDERBOOK?.stockSymbol;
+  const userExists = INR_BALANCES[userId];
+  const symbolExists = ORDERBOOK[stockSymbol];
 
   if (!userExists) {
     return {
@@ -293,5 +293,91 @@ export const cancelOrder = (req: QUEUE_REQUEST) => {
     };
   }
 
-  return { statusCode: 200, data: { message: "Sell order canceled" } };
+  let cancelledCount = 0;
+  let refundedInr = 0;
+  let refundedStock = 0;
+
+  // Cancel exit orders (actual sell orders) - stored on the same stockType
+  const exitOrderbook = ORDERBOOK[stockSymbol][stockType];
+  for (const [price, orderData] of exitOrderbook.entries()) {
+    const userOrders = orderData.orders.filter(
+      (order) => order.userId === userId && order.type === "exit"
+    );
+
+    for (const order of userOrders) {
+      // Refund locked stock
+      if (STOCK_BALANCES[userId]?.[stockSymbol]?.[stockType]) {
+        STOCK_BALANCES[userId][stockSymbol][stockType]!.locked -= order.quantity;
+        STOCK_BALANCES[userId][stockSymbol][stockType]!.quantity += order.quantity;
+        refundedStock += order.quantity;
+      }
+
+      // Update orderbook total
+      orderData.total -= order.quantity;
+      cancelledCount++;
+    }
+
+    // Remove user's orders from the orders array
+    orderData.orders = orderData.orders.filter(
+      (order) => !(order.userId === userId && order.type === "exit")
+    );
+
+    // Clean up empty price levels
+    if (orderData.total === 0) {
+      exitOrderbook.delete(price);
+    }
+  }
+
+  // Cancel buy orders (pseudo-sell orders) - stored on the opposite stockType
+  const oppositeType: "yes" | "no" = stockType === "yes" ? "no" : "yes";
+  const buyOrderbook = ORDERBOOK[stockSymbol][oppositeType];
+
+  for (const [price, orderData] of buyOrderbook.entries()) {
+    const userOrders = orderData.orders.filter(
+      (order) => order.userId === userId && order.type === "buy"
+    );
+
+    for (const order of userOrders) {
+      // Calculate the original buy price (pseudo-sell is stored at 10 - originalPrice)
+      const originalPrice = 10 - price;
+
+      // Refund locked INR (stored in paise)
+      INR_BALANCES[userId].locked -= order.quantity * originalPrice * 100;
+      INR_BALANCES[userId].balance += order.quantity * originalPrice * 100;
+      refundedInr += order.quantity * originalPrice;
+
+      // Update orderbook total
+      orderData.total -= order.quantity;
+      cancelledCount++;
+    }
+
+    // Remove user's orders from the orders array
+    orderData.orders = orderData.orders.filter(
+      (order) => !(order.userId === userId && order.type === "buy")
+    );
+
+    // Clean up empty price levels
+    if (orderData.total === 0) {
+      buyOrderbook.delete(price);
+    }
+  }
+
+  if (cancelledCount === 0) {
+    return {
+      statusCode: 404,
+      data: { message: `No pending orders found for ${stockType} on ${stockSymbol}` },
+    };
+  }
+
+  // Publish updated orderbook
+  publishOrderbook(stockSymbol);
+
+  return {
+    statusCode: 200,
+    data: {
+      message: `Cancelled ${cancelledCount} order(s)`,
+      refundedInr,
+      refundedStock,
+    },
+  };
 };
