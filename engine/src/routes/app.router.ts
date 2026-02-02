@@ -19,6 +19,7 @@ import {
   sellOrder,
   viewOrders,
 } from "../controllers/orders";
+import { registerUser, loginUser } from "../controllers/user.controller";
 import { QUEUE_DATA_ELEMENT } from "../interfaces/requestModels";
 import { publisher } from "../services/redis";
 
@@ -26,9 +27,17 @@ import { publisher } from "../services/redis";
  * Match all endpoints
  * @param data - The data object
  */
-export const matchEndpoint = (data: QUEUE_DATA_ELEMENT) => {
+export const matchEndpoint = async (data: QUEUE_DATA_ELEMENT) => {
   let response;
   switch (data.endpoint) {
+    // Auth endpoints
+    case "/auth/register":
+      response = await registerUser(data.req);
+      break;
+    case "/auth/login":
+      response = await loginUser(data.req);
+      break;
+
     // Create user and symbol
     case "/user/create/:userId":
       response = createUser(data.req);

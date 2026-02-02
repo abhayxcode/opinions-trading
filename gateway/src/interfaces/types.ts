@@ -1,3 +1,8 @@
+export interface AuthContext {
+  userId: string;
+  role: 'admin' | 'user';
+}
+
 export interface QUEUE_DATA {
   _id: string;
   endpoint: string;
@@ -5,4 +10,5 @@ export interface QUEUE_DATA {
     body: {};
     params: {};
   };
+  auth?: AuthContext;
 }

@@ -1,4 +1,4 @@
-import { INR_BALANCES, ORDERBOOK, STOCK_BALANCES } from "../config/globals";
+import { INR_BALANCES, ORDERBOOK, STOCK_BALANCES, USERS } from "../config/globals";
 import { MINT_REQUEST, QUEUE_REQUEST } from "../interfaces/requestModels";
 
 /**
@@ -146,5 +146,10 @@ export const reset = (req: QUEUE_REQUEST) => {
   for (let prop in STOCK_BALANCES) {
     delete STOCK_BALANCES[prop];
   }
+
+  for (let prop in USERS) {
+    delete USERS[prop];
+  }
+
   return { statusCode: 200, data: { message: "Reset Successfully" } };
 };

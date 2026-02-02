@@ -1,17 +1,22 @@
 import express from "express";
 
 import forwardRequest from "../controllers";
+import { authenticate } from "../middleware";
+import { validate } from "../middleware/validation.middleware";
+import { buyOrderSchema, sellOrderSchema, cancelOrderSchema } from "../schemas";
 
 const router = express.Router();
 
-// Orders
-router.post("/buy", async (req, res) => {
+// Orders (all require authentication)
+router.post("/buy", authenticate, validate(buyOrderSchema), async (req, res) => {
   await forwardRequest(req, res, "/order/buy");
 });
-router.post("/sell", async (req, res) => {
+
+router.post("/sell", authenticate, validate(sellOrderSchema), async (req, res) => {
   await forwardRequest(req, res, "/order/sell");
 });
-router.post("/cancel", async (req, res) => {
+
+router.post("/cancel", authenticate, validate(cancelOrderSchema), async (req, res) => {
   await forwardRequest(req, res, "/order/cancel");
 });
 

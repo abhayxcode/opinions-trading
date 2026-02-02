@@ -1,41 +1,48 @@
 import express, { Response } from "express";
+import authRouter from "./auth.router";
 import balanceRouter from "./balance.router";
 import orderbookRouter from "./orderbook.router";
 import ordersRouter from "./orders.router";
 
 import forwardRequest from "../controllers";
+import { authenticate, requireAdmin, requireSelfOrAdmin } from "../middleware";
+import { validate } from "../middleware/validation.middleware";
+import { onrampSchema, mintSchema } from "../schemas";
 
 const router = express.Router();
 
-// Create user
-router.post("/user/create/:userId", async (req, res) => {
+// Auth routes (public)
+router.use("/auth", authRouter);
+
+// Create user (admin only)
+router.post("/user/create/:userId", authenticate, requireAdmin, async (req, res) => {
   await forwardRequest(req, res, "/user/create/:userId");
 });
 
-// Create Symbol
-router.post("/symbol/create/:stockSymbol", async (req, res) => {
+// Create Symbol (admin only)
+router.post("/symbol/create/:stockSymbol", authenticate, requireAdmin, async (req, res) => {
   await forwardRequest(req, res, "/symbol/create/:stockSymbol");
 });
 
-// Onramp Money
-router.post("/onramp/inr", async (req, res) => {
+// Onramp Money (authenticated, self or admin)
+router.post("/onramp/inr", authenticate, requireSelfOrAdmin, validate(onrampSchema), async (req, res) => {
   await forwardRequest(req, res, "/onramp/inr");
 });
 
-// Mint tokens
-router.post("/trade/mint", async (req, res) => {
+// Mint tokens (admin only)
+router.post("/trade/mint", authenticate, requireAdmin, validate(mintSchema), async (req, res) => {
   await forwardRequest(req, res, "/trade/mint");
 });
 
-// Reset database
-router.post("/reset", async (req, res) => {
+// Reset database (admin only)
+router.post("/reset", authenticate, requireAdmin, async (req, res) => {
   await forwardRequest(req, res, "/reset");
 });
 
 // Balances (INR and Stock)
 router.use("/balances", balanceRouter);
 
-// Orderbook (View Orderbook)
+// Orderbook (View Orderbook - public)
 router.use("/orderbook", orderbookRouter);
 
 // Orders (Buy, Sell, Cancel)
